@@ -1,6 +1,6 @@
-FROM acalabs/crystal-alpine:0.30.1 as builder
+FROM crystallang/crystal:0.33.0-alpine as builder
 
-ARG HEALTHCHECK_VERSION="0.1.1"
+ARG HEALTHCHECK_VERSION="0.1.3"
 
 # Build healthcheck util
 RUN wget -qO - https://github.com/aca-labs/rethinkdb-health/archive/v${HEALTHCHECK_VERSION}.tar.gz \
@@ -9,14 +9,15 @@ RUN wget -qO - https://github.com/aca-labs/rethinkdb-health/archive/v${HEALTHCHE
 
 WORKDIR /rethinkdb-health
 
-RUN shards install --production && crystal build ./src/rethinkdb-health.cr
+RUN shards install --production
+RUN crystal build --static ./src/rethinkdb-health.cr
 
-ROM alpine:3.10
+FROM alpine:3.11
 
 # Add healthcheck util to RethinkDB container
 COPY --from=builder /rethinkdb-health/rethinkdb-health /bin/
 
-RUN apk add --no-cache rethinkdb=2.3.6-r10 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
+RUN apk add --no-cache rethinkdb
 
 VOLUME ["/data"]
 WORKDIR /data
